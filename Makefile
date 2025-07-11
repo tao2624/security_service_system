@@ -1,67 +1,64 @@
 #
 # Makefile
 #
+CC 				?= gcc
+LVGL_DIR_NAME 	?= lvgl
+LVGL_DIR 		?= .
 
-CC              ?= gcc
-CXX             ?= g++
-LVGL_DIR_NAME   ?= lvgl
-LVGL_DIR        ?= .
+WARNINGS		:= -Wall -Wshadow -Wundef -Wmissing-prototypes -Wno-discarded-qualifiers -Wextra -Wno-unused-function -Wno-error=strict-prototypes -Wpointer-arith \
+					-fno-strict-aliasing -Wno-error=cpp -Wuninitialized -Wmaybe-uninitialized -Wno-unused-parameter -Wno-missing-field-initializers -Wtype-limits \
+					-Wsizeof-pointer-memaccess -Wno-format-nonliteral -Wno-cast-qual -Wunreachable-code -Wno-switch-default -Wreturn-type -Wmultichar -Wformat-security \
+					-Wno-ignored-qualifiers -Wno-error=pedantic -Wno-sign-compare -Wno-error=missing-prototypes -Wdouble-promotion -Wclobbered -Wdeprecated -Wempty-body \
+					-Wshift-negative-value -Wstack-usage=2048 -Wno-unused-value -std=gnu99
+CFLAGS 			?= -O3 -g0 -I$(LVGL_DIR)/ $(WARNINGS)
+LDFLAGS 		?= -lm
+BIN 			= main
+BUILD_DIR 		= ./build
+BUILD_OBJ_DIR 	= $(BUILD_DIR)/obj
+BUILD_BIN_DIR 	= $(BUILD_DIR)/bin
 
-WARNINGS        := -Wall -Wshadow -Wundef -Wmissing-prototypes -Wno-discarded-qualifiers -Wextra -Wno-unused-function -Wno-error=strict-prototypes -Wpointer-arith \
-                   -fno-strict-aliasing -Wno-error=cpp -Wuninitialized -Wmaybe-uninitialized -Wno-unused-parameter -Wno-missing-field-initializers -Wtype-limits \
-                   -Wsizeof-pointer-memaccess -Wno-format-nonliteral -Wno-cast-qual -Wunreachable-code -Wno-switch-default -Wreturn-type -Wmultichar -Wformat-security \
-                   -Wno-ignored-qualifiers -Wno-error=pedantic -Wno-sign-compare -Wno-error=missing-prototypes -Wdouble-promotion -Wclobbered -Wdeprecated -Wempty-body \
-                   -Wshift-negative-value -Wstack-usage=2048 -Wno-unused-value -std=gnu99
-CFLAGS          ?= -O3 -g0 -I$(LVGL_DIR)/ $(WARNINGS)
-LDFLAGS         ?= -lm
+prefix 			?= /usr
+bindir 			?= $(prefix)/bin
 
-BIN             = main
-BUILD_DIR       = ./build
-BUILD_OBJ_DIR   = $(BUILD_DIR)/obj
-BUILD_BIN_DIR   = $(BUILD_DIR)/bin
+#Collect the files to compile
+MAINSRC          = ./main.c
 
-prefix          ?= /usr
-bindir          ?= $(prefix)/bin
-
-# Collect source files recursively
-CSRCS           := $(shell find src -type f -name '*.c')
-CXXSRCS         := $(shell find src -type f -name '*.cpp')
-
-# Include LVGL sources
 include $(LVGL_DIR)/lvgl/lvgl.mk
 
-OBJEXT          ?= .o
+CSRCS 			+=$(LVGL_DIR)/mouse_cursor_icon.c 
 
-COBJS           = $(CSRCS:.c=$(OBJEXT))
-CXXOBJS         = $(CXXSRCS:.cpp=$(OBJEXT))
-AOBJS           = $(ASRCS:.S=$(OBJEXT))
+OBJEXT 			?= .o
 
-SRCS            = $(ASRCS) $(CSRCS) $(CXXSRCS)
-OBJS            = $(AOBJS) $(COBJS) $(CXXOBJS)
-TARGET          = $(addprefix $(BUILD_OBJ_DIR)/, $(patsubst ./%, %, $(OBJS)))
+AOBJS 			= $(ASRCS:.S=$(OBJEXT))
+COBJS 			= $(CSRCS:.c=$(OBJEXT))
+
+MAINOBJ 		= $(MAINSRC:.c=$(OBJEXT))
+
+SRCS 			= $(ASRCS) $(CSRCS) $(MAINSRC)
+OBJS 			= $(AOBJS) $(COBJS) $(MAINOBJ)
+TARGET 			= $(addprefix $(BUILD_OBJ_DIR)/, $(patsubst ./%, %, $(OBJS)))
+
+## MAINOBJ -> OBJFILES
+
 
 all: default
 
-$(BUILD_OBJ_DIR)/%.o: %.c lv_conf.h
+$(BUILD_OBJ_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	@$(CC)  $(CFLAGS) -c $< -o $@
-	@echo "CC  $<"
+	@echo "CC $<"
 
-$(BUILD_OBJ_DIR)/%.o: %.cpp lv_conf.h
-	@mkdir -p $(dir $@)
-	@$(CXX)  $(CFLAGS) -c $< -o $@
-	@echo "CXX $<"
-
-$(BUILD_OBJ_DIR)/%.o: %.S lv_conf.h
+$(BUILD_OBJ_DIR)/%.o: %.S
 	@mkdir -p $(dir $@)
 	@$(CC)  $(CFLAGS) -c $< -o $@
-	@echo "AS  $<"
+	@echo "CC $<"
+
 
 default: $(TARGET)
 	@mkdir -p $(dir $(BUILD_BIN_DIR)/)
-	$(CXX) -o $(BUILD_BIN_DIR)/$(BIN) $(TARGET) $(LDFLAGS)
+	$(CC) -o $(BUILD_BIN_DIR)/$(BIN) $(TARGET) $(LDFLAGS)
 
-clean:
+clean: 
 	rm -rf $(BUILD_DIR)
 
 install:
@@ -70,4 +67,3 @@ install:
 
 uninstall:
 	$(RM) -r $(addprefix $(DESTDIR)$(bindir)/,$(BIN))
-
